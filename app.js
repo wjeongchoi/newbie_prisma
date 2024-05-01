@@ -81,3 +81,49 @@ app.get("/problems/3", async (req, res) => {
 
   res.json(result);
 });
+
+app.get("/problems/6", async (req, res) => {
+  const managerB = await prisma.employee.findFirst({
+    where: {
+      firstName: "Phillip",
+      lastName: "Edwards",
+    },
+    select: {
+      Branch_Branch_managerSINToEmployee: {
+        select: {
+          branchNumber: true,
+        },
+      },
+    },
+  });
+  const branchN = managerB.Branch_Branch_managerSINToEmployee.branchNumber;
+
+  const accounts = await prisma.account.findMany({
+    where: {
+      branchNumber: branchN,
+    },
+    orderBy: {
+      accNumber: "asc",
+    },
+    select: {
+      Branch: {
+        select: {
+          branchName: true,
+        },
+      },
+      accNumber: true,
+      balance: true,
+    },
+  });
+  const filteredSortedAccounts = accounts
+  .filter(account => parseFloat(account.balance) > 100000)  
+  .sort((a, b) => parseInt(a.accNumber) - parseInt(b.accNumber))  
+  .slice(0, 10);  
+  res.json(
+    filteredSortedAccounts.map((r) => ({
+      branchName: r.Branch.branchName,
+      accNumber: r.accNumber,
+      balance: r.balance,
+    }))
+  );
+});
