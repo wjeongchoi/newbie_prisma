@@ -116,9 +116,9 @@ app.get("/problems/6", async (req, res) => {
     },
   });
   const filteredSortedAccounts = accounts
-  .filter(account => parseFloat(account.balance) > 100000)  
-  .sort((a, b) => parseInt(a.accNumber) - parseInt(b.accNumber))  
-  .slice(0, 10);  
+    .filter((account) => parseFloat(account.balance) > 100000)
+    .sort((a, b) => parseInt(a.accNumber) - parseInt(b.accNumber))
+    .slice(0, 10);
   res.json(
     filteredSortedAccounts.map((r) => ({
       branchName: r.Branch.branchName,
@@ -126,4 +126,41 @@ app.get("/problems/6", async (req, res) => {
       balance: r.balance,
     }))
   );
+});
+
+app.get("/problems/8", async (req, res) => {
+  const employees = await prisma.employee.findMany({
+    where: {
+      salary: {
+        gt: 50000,
+      },
+    },
+    include: {
+      Branch_Branch_managerSINToEmployee: true,
+    },
+    orderBy: [{ firstName: "asc" }],
+  });
+  const result = employees
+    .map((employee) => ({
+      sin: employee.sin,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      salary: employee.salary,
+      branchName:
+        employee.Branch_Branch_managerSINToEmployee.length > 0
+          ? employee.Branch_Branch_managerSINToEmployee[0].branchName
+          : null,
+    }))
+    .sort((a, b) => {
+      if (a.branchName !== b.branchName) {
+        return a.branchName === null
+          ? 1
+          : b.branchName === null
+          ? -1
+          : b.branchName.localeCompare(a.branchName) ;
+      }
+      return a.firstName.localeCompare(b.firstName);
+    })
+    .slice(0, 10);
+  res.json(result);
 });
