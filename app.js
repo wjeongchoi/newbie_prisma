@@ -118,7 +118,7 @@ app.get("/problems/4", async (req, res) => {
 });
 
 app.get("/problems/5", async (req, res) => {
-  const result = await prisma.employee.findMany({});
+  const result = await prisma.customer.findMany({});
   res.json(result);
 });
 
@@ -226,7 +226,22 @@ app.get("/problems/11", async (req, res) => {
 });
 
 app.get("/problems/14", async (req, res) => {
-  const result = await prisma.employee.findMany({});
+  const sumOfSalaries = await prisma.employee.aggregate({
+    _sum: {
+      salary: true,
+    },
+    where: {
+      Branch_Employee_branchNumberToBranch: {
+        branchName: "Moscow",
+      },
+    },
+  });
+
+  const totalSalaries = sumOfSalaries._sum.salary;
+
+  const result = {
+    "sum of employees salaries": totalSalaries ? totalSalaries.toString() : "0",
+  };
   res.json(result);
 });
 
