@@ -491,7 +491,7 @@ app.post("/employee/join", async (req, res) => {
   }
 });
 
-app.delete("/employee/leave", express.json(), async (req, res) => {
+app.delete("/employee/leave", async (req, res) => {
   const { sin } = req.body;
 
   if (!sin) {
@@ -520,6 +520,52 @@ app.delete("/employee/leave", express.json(), async (req, res) => {
   } catch (error) {
     res.status(500).send({
       message: "An error occurred while deleting the employee",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/account/:account_no/deposit", express.json(), async (req, res) => {
+  const { account_no } = req.params;
+  const { customerID, amount } = req.body;
+
+  if (!amount || amount <= 0) {
+    return res.status(400).send("Invalid deposit amount.");
+  }
+
+  try {
+    const accountNumber = parseInt(account_no);
+
+    const account = await prisma.account.findUnique({
+      where: { accNumber: accountNumber },
+      include: { Owns: true },
+    });
+
+    if (!account) {
+      return res.status(404).send("Account not found.");
+    }
+
+    const isOwner = account.Owns.some(
+      (ownership) => ownership.customerID === customerID
+    );
+    if (!isOwner) {
+      return res
+        .status(403)
+        .send("Unauthorized: Customer does not own this account.");
+    }
+
+    const newBalance = parseFloat(account.balance) + parseFloat(amount);
+
+    const updatedAccount = await prisma.account.update({
+      where: { accNumber: accountNumber },
+      data: { balance: newBalance.toString() },
+      select: { balance: true },
+    });
+
+    res.status(200).send(updatedAccount.balance);
+  } catch (error) {
+    res.status(500).send({
+      message: "An error occurred while processing your request",
       error: error.message,
     });
   }
