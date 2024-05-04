@@ -216,7 +216,53 @@ app.get("/problems/9", async (req, res) => {
 });
 
 app.get("/problems/10", async (req, res) => {
-  const result = await prisma.employee.findMany({});
+  const helenBranches = await prisma.owns.findMany({
+    where: {
+      Customer: {
+        firstName: "Helen",
+        lastName: "Morgan",
+      },
+    },
+    include: {
+      Account: true,
+    },
+  });
+  const helenBranchNumbers = new Set(
+    helenBranches.map((own) => own.Account.branchNumber)
+  );
+
+  const potentialCustomers = await prisma.customer.findMany({
+    where: {
+      income: {
+        gt: 5000,
+      },
+    },
+    include: {
+      Owns: {
+        include: {
+          Account: true,
+        },
+      },
+    },
+  });
+
+  const qualifiedCustomers = potentialCustomers.filter((customer) => {
+    const customerBranchNumbers = new Set(
+      customer.Owns.map((own) => own.Account.branchNumber)
+    );
+    return [...helenBranchNumbers].every((branch) =>
+      customerBranchNumbers.has(branch)
+    );
+  });
+
+  qualifiedCustomers.sort((a, b) => b.income - a.income);
+
+  const result = qualifiedCustomers.slice(0, 10).map((customer) => ({
+    customerID: customer.customerID,
+    firstName: customer.firstName,
+    lastName: customer.lastName,
+    income: customer.income,
+  }));
   res.json(result);
 });
 
