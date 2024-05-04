@@ -525,7 +525,7 @@ app.delete("/employee/leave", async (req, res) => {
   }
 });
 
-app.post("/account/:account_no/deposit", express.json(), async (req, res) => {
+app.post("/account/:account_no/deposit", async (req, res) => {
   const { account_no } = req.params;
   const { customerID, amount } = req.body;
 
@@ -555,6 +555,57 @@ app.post("/account/:account_no/deposit", express.json(), async (req, res) => {
     }
 
     const newBalance = parseFloat(account.balance) + parseFloat(amount);
+
+    const updatedAccount = await prisma.account.update({
+      where: { accNumber: accountNumber },
+      data: { balance: newBalance.toString() },
+      select: { balance: true },
+    });
+
+    res.status(200).send(updatedAccount.balance);
+  } catch (error) {
+    res.status(500).send({
+      message: "An error occurred while processing your request",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/account/:account_no/withdraw", async (req, res) => {
+  const { account_no } = req.params;
+  const { customerID, amount } = req.body;
+
+  if (!amount || amount <= 0) {
+    return res.status(400).send("Invalid withdrawal amount.");
+  }
+
+  try {
+    const accountNumber = parseInt(account_no);
+
+    const account = await prisma.account.findUnique({
+      where: { accNumber: accountNumber },
+      include: { Owns: true },
+    });
+
+    if (!account) {
+      return res.status(404).send("Account not found.");
+    }
+
+    const isOwner = account.Owns.some(
+      (ownership) => ownership.customerID === customerID
+    );
+    if (!isOwner) {
+      return res
+        .status(403)
+        .send("Unauthorized: Customer does not own this account.");
+    }
+
+    const currentBalance = parseFloat(account.balance);
+    if (amount > currentBalance) {
+      return res.status(400).send("Insufficient funds for withdrawal.");
+    }
+
+    const newBalance = currentBalance - amount;
 
     const updatedAccount = await prisma.account.update({
       where: { accNumber: accountNumber },
