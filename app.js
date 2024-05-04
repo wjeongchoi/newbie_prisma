@@ -114,8 +114,96 @@ app.get("/problems/3", async (req, res) => {
 });
 
 app.get("/problems/4", async (req, res) => {
-  const result = await prisma.employee.findMany({});
-  res.json(result);
+  const londonCustomers = await prisma.customer.findMany({
+    where: {
+      income: {
+        gt: 80000,
+      },
+      Owns: {
+        some: {
+          Account: {
+            Branch: {
+              branchName: "London",
+            },
+          },
+        },
+      },
+    },
+    select: {
+      customerID: true,
+      income: true,
+      Owns: {
+        select: {
+          accNumber: true,
+          Account: {
+            select: {
+              branchNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const latveriaCustomers = await prisma.customer.findMany({
+    where: {
+      income: {
+        gt: 80000,
+      },
+      Owns: {
+        some: {
+          Account: {
+            Branch: {
+              branchName: "Latveria",
+            },
+          },
+        },
+      },
+    },
+    select: {
+      customerID: true,
+      income: true,
+      Owns: {
+        select: {
+          accNumber: true,
+          Account: {
+            select: {
+              branchNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const intersection = londonCustomers.filter((customer) => {
+    return latveriaCustomers.some(
+      (latveriaCustomer) => latveriaCustomer.customerID === customer.customerID
+    );
+  });
+  const filteredIntersection = intersection.filter((customer) => {
+    return customer.income > 80000;
+  });
+  const formattedIntersection = filteredIntersection.flatMap((customer) => {
+    return customer.Owns.map((own) => {
+      return {
+        customerID: customer.customerID,
+        income: customer.income,
+        accNumber: own.accNumber,
+        branchNumber: own.Account.branchNumber,
+      };
+    });
+  });
+
+  const sortedIntersection = formattedIntersection.sort((a, b) => {
+    if (a.customerID !== b.customerID) {
+      return a.customerID - b.customerID;
+    } else {
+      return a.accNumber - b.accNumber;
+    }
+  });
+
+  res.json(sortedIntersection.slice(0,10));
 });
 
 app.get("/problems/5", async (req, res) => {
