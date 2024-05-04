@@ -119,8 +119,41 @@ app.get("/problems/4", async (req, res) => {
 });
 
 app.get("/problems/5", async (req, res) => {
-  const result = await prisma.customer.findMany({});
-  res.json(result);
+  const accounts = await prisma.account.findMany({
+    where: {
+      type: {
+        in: ["BUS", "SAV"],
+      },
+    },
+    select: {
+      accNumber: true,
+      type: true,
+      balance: true,
+      Owns: {
+        select: {
+          customerID: true,
+        },
+      },
+    },
+  });
+  const results = accounts.flatMap((account) =>
+    account.Owns.map((owns) => ({
+      customerID: owns.customerID,
+      type: account.type,
+      "account number": account.accNumber,
+      balance: account.balance,
+    }))
+  );
+  results.sort((a, b) => {
+    if (a.customerID !== b.customerID) {
+      return a.customerID - b.customerID;
+    } else if (a.type !== b.type) {
+      return a.type.localeCompare(b.type);
+    } else {
+      return a.accNumber - b.accNumber;
+    }
+  });
+  res.json(results.slice(0, 10));
 });
 
 app.get("/problems/6", async (req, res) => {
