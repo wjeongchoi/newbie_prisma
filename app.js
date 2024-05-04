@@ -490,3 +490,37 @@ app.post("/employee/join", async (req, res) => {
     res.status(500).send("Failed to add new employee.");
   }
 });
+
+app.delete("/employee/leave", express.json(), async (req, res) => {
+  const { sin } = req.body;
+
+  if (!sin) {
+    return res.status(400).send({ message: "Missing employee SIN number" });
+  }
+  try {
+    const sinNumber = parseInt(sin);
+
+    const employeeExists = await prisma.employee.findUnique({
+      where: { sin: sinNumber },
+    });
+
+    if (!employeeExists) {
+      return res.status(404).send({ message: "Employee not found" });
+    }
+
+    await prisma.employee.delete({
+      where: { sin: sinNumber },
+    });
+
+    res
+      .status(200)
+      .send(
+        "안녕히 계세요 여러분! \n전 이 세상의 모든 굴레와 속박을 벗어 던지고 제 행복을 찾아 떠납니다!\n여러분도 행복하세요~~!"
+      );
+  } catch (error) {
+    res.status(500).send({
+      message: "An error occurred while deleting the employee",
+      error: error.message,
+    });
+  }
+});
