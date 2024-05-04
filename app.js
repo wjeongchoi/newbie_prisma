@@ -43,7 +43,37 @@ app.get("/problems/1", async (req, res) => {
 });
 
 app.get("/problems/2", async (req, res) => {
-  const result = await prisma.employee.findMany({});
+  const employees = await prisma.employee.findMany({
+    where: {
+      Branch_Employee_branchNumberToBranch: {
+        branchName: {
+          in: ["London", "Berlin"],
+        },
+      },
+    },
+    include: {
+      Branch_Employee_branchNumberToBranch: {
+        include: {
+          Employee_Branch_managerSINToEmployee: true,
+        },
+      },
+    },
+  });
+  const result = employees
+    .map((employee) => ({
+      sin: employee.sin,
+      branchName: employee.Branch_Employee_branchNumberToBranch.branchName,
+      salary: employee.salary,
+      "Salary Diff": employee.Branch_Employee_branchNumberToBranch
+        .Employee_Branch_managerSINToEmployee
+        ? `${
+            employee.Branch_Employee_branchNumberToBranch
+              .Employee_Branch_managerSINToEmployee.salary - employee.salary
+          }`
+        : null,
+    }))
+    .sort((a, b) => b["Salary Diff"] - a["Salary Diff"])
+    .slice(0, 10);
   res.json(result);
 });
 
