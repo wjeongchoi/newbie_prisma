@@ -112,6 +112,16 @@ app.get("/problems/3", async (req, res) => {
   res.json(result);
 });
 
+app.get("/problems/4", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
+app.get("/problems/5", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
 app.get("/problems/6", async (req, res) => {
   const managerB = await prisma.employee.findFirst({
     where: {
@@ -158,6 +168,11 @@ app.get("/problems/6", async (req, res) => {
   );
 });
 
+app.get("/problems/7", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
 app.get("/problems/8", async (req, res) => {
   const employees = await prisma.employee.findMany({
     where: {
@@ -187,10 +202,45 @@ app.get("/problems/8", async (req, res) => {
           ? 1
           : b.branchName === null
           ? -1
-          : b.branchName.localeCompare(a.branchName) ;
+          : b.branchName.localeCompare(a.branchName);
       }
       return a.firstName.localeCompare(b.firstName);
     })
     .slice(0, 10);
+  res.json(result);
+});
+
+app.get("/problems/9", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
+app.get("/problems/10", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
+app.get("/problems/11", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
+app.get("/problems/14", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
+app.get("/problems/15", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
+app.get("/problems/17", async (req, res) => {
+  const result = await prisma.employee.findMany({});
+  res.json(result);
+});
+
+app.get("/problems/18", async (req, res) => {
+  const result = await prisma.employee.findMany({});
   res.json(result);
 });
