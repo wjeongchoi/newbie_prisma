@@ -246,7 +246,38 @@ app.get("/problems/14", async (req, res) => {
 });
 
 app.get("/problems/15", async (req, res) => {
-  const result = await prisma.employee.findMany({});
+  const customers = await prisma.customer.findMany({
+    include: {
+      Owns: {
+        include: {
+          Account: {
+            include: {
+              Branch: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const result = customers
+    .filter((customer) => {
+      const branchNames = new Set(
+        customer.Owns.map((own) => own.Account.Branch.branchName)
+      );
+      return branchNames.size === 4;
+    })
+    .map((customer) => ({
+      customerID: customer.customerID,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+    }))
+    .sort((a, b) => {
+      const lastNameComparison = a.lastName.localeCompare(b.lastName);
+      if (lastNameComparison !== 0) return lastNameComparison;
+      return a.firstName.localeCompare(b.firstName);
+    })
+    .slice(0, 10); // Limit to top 10
   res.json(result);
 });
 
