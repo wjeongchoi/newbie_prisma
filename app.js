@@ -203,7 +203,7 @@ app.get("/problems/4", async (req, res) => {
     }
   });
 
-  res.json(sortedIntersection.slice(0,10));
+  res.json(sortedIntersection.slice(0, 10));
 });
 
 app.get("/problems/5", async (req, res) => {
@@ -291,8 +291,183 @@ app.get("/problems/6", async (req, res) => {
 });
 
 app.get("/problems/7", async (req, res) => {
-  const result = await prisma.employee.findMany({});
-  res.json(result);
+  const newYorkBranch = await prisma.branch.findFirst({
+    where: {
+      branchName: "New York",
+    },
+  });
+  const londonBranch = await prisma.branch.findFirst({
+    where: {
+      branchName: "London",
+    },
+  });
+  const londonBranchNumber = londonBranch?.branchNumber;
+  const newYorkBranchNumber = newYorkBranch?.branchNumber;
+  const newYorkCustomers = await prisma.customer.findMany({
+    where: {
+      Owns: {
+        some: {
+          Account: {
+            branchNumber: newYorkBranchNumber,
+          },
+        },
+      },
+    },
+    select: {
+      customerID: true,
+      income: true,
+      Owns: {
+        select: {
+          accNumber: true,
+          Account: {
+            select: {
+              branchNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const londonCustomers = await prisma.customer.findMany({
+    where: {
+      Owns: {
+        some: {
+          Account: {
+            branchNumber: londonBranchNumber,
+          },
+        },
+      },
+    },
+    select: {
+      customerID: true,
+      income: true,
+      Owns: {
+        select: {
+          accNumber: true,
+          Account: {
+            select: {
+              branchNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  const newYorkCustomerIDs = newYorkCustomers.map(
+    (customer) => customer.customerID
+  );
+  const londonCustomerIDs = londonCustomers.map(
+    (customer) => customer.customerID
+  );
+
+  const customersNotInLondon = await prisma.customer.findMany({
+    where: {
+      AND: [
+        {
+          customerID: {
+            in: newYorkCustomerIDs,
+          },
+        },
+        {
+          NOT: {
+            customerID: {
+              in: londonCustomerIDs,
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      customerID: true,
+      income: true,
+      Owns: {
+        select: {
+          accNumber: true,
+          Account: {
+            select: {
+              branchNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const londonCustomerAccounts = await prisma.customer.findMany({
+    where: {
+      customerID: {
+        in: londonCustomerIDs,
+      },
+    },
+    select: {
+      customerID: true,
+      income: true,
+      Owns: {
+        select: {
+          accNumber: true,
+          Account: {
+            select: {
+              branchNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  const londonAccountNumbers = londonCustomerAccounts.flatMap((customer) => {
+    return customer.Owns.map((own) => own.accNumber);
+  });
+
+  const customersWithLondonAccounts = await prisma.customer.findMany({
+    where: {
+      Owns: {
+        some: {
+          accNumber: {
+            in: londonAccountNumbers,
+          },
+        },
+      },
+    },
+    select: {
+      customerID: true,
+      income: true,
+      Owns: {
+        select: {
+          accNumber: true,
+          Account: {
+            select: {
+              branchNumber: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const customersNotInLondonIDs = customersNotInLondon.map(
+    (customer) => customer.customerID
+  );
+  const customersWithLondonAccountsIDs = customersWithLondonAccounts.map(
+    (customer) => customer.customerID
+  );
+
+  const uniqueCustomersWithLondonAccountsIDs = new Set(
+    customersWithLondonAccountsIDs
+  );
+  const filteredCustomersNotInLondonIDs = customersNotInLondonIDs.filter(
+    (customerID) => !uniqueCustomersWithLondonAccountsIDs.has(customerID)
+  );
+
+  const customersNotInLondonOnlySorted = filteredCustomersNotInLondonIDs
+    .map((customerID) => {
+      return {
+        customerID: customerID,
+      };
+    })
+    .sort((a, b) => a.customerID - b.customerID);
+
+  res.json(customersNotInLondonOnlySorted.slice(0, 10));
 });
 
 app.get("/problems/8", async (req, res) => {
