@@ -256,6 +256,35 @@ app.get("/problems/17", async (req, res) => {
 });
 
 app.get("/problems/18", async (req, res) => {
-  const result = await prisma.employee.findMany({});
+  const accounts = await prisma.account.findMany({
+    where: {
+      Branch: {
+        branchName: "Berlin",
+      },
+    },
+    include: {
+      Transactions: true,
+      Branch: true,
+    },
+  });
+
+  const filteredAccounts = accounts
+    .filter(
+      (account) => account.Transactions && account.Transactions.length >= 10
+    )
+    .map((account) => ({
+      accNumber: account.accNumber,
+      balance: account.balance,
+      sumOfTransactionAmounts: account.Transactions.reduce(
+        (sum, transaction) => sum + parseFloat(transaction.amount),
+        0
+      ),
+    }));
+
+  const sortedAccounts = filteredAccounts.sort(
+    (a, b) => a.sumOfTransactionAmounts - b.sumOfTransactionAmounts
+  );
+
+  const result = sortedAccounts.slice(0, 10);
   res.json(result);
 });
