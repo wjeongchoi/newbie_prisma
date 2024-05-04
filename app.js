@@ -2,6 +2,7 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 
 const app = express();
+app.use(express.json());
 const prisma = new PrismaClient();
 const port = 3001;
 
@@ -465,4 +466,27 @@ app.get("/problems/18", async (req, res) => {
 
   const result = sortedAccounts.slice(0, 10);
   res.json(result);
+});
+
+app.post("/employee/join", async (req, res) => {
+  try {
+    const { sin, firstName, lastName, salary, branchNumber } = req.body;
+
+    const newEmployee = await prisma.employee.create({
+      data: {
+        sin: sin,
+        firstName: firstName,
+        lastName: lastName,
+        salary: salary,
+        branchNumber: branchNumber,
+      },
+    });
+
+    res.status(201)
+      .send(`'이 팀은 미친듯이 일하는 일꾼들로 이루어진 광전사 설탕 노움 조합이다.
+      분위기에 적응하기는 쉽지 않지만 아주 화력이 좋은 강력한 조합인거 같다.'`);
+  } catch (error) {
+    console.error("Error adding new employee: ", error);
+    res.status(500).send("Failed to add new employee.");
+  }
 });
